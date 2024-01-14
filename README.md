@@ -42,9 +42,11 @@ localhost:8080/api
     ],
     "limit": 10,
     "offset": 0
-}```
+}
+```
 
-```json {
+```json 
+{
     "method": "get_balances",
     "filters": [
         {
@@ -65,4 +67,5 @@ localhost:8080/api
     "limit": 10,
     "offset": 0
 }
+
 ```
