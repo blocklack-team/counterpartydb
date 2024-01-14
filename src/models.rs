@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use diesel::{prelude::*};
 use crate::schema::*;
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// User details.
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]

@@ -1,9 +1,8 @@
-
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
     assets (asset_id) {
-        
+
         asset_id -> Text,
         asset_name -> Nullable<Text>,
         block_index -> Nullable<Integer>,
