@@ -14,9 +14,9 @@ pub struct Asset {
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
 #[diesel(table_name = balances)]
 pub struct Balance {
-    pub address: String,
-    pub asset: Option<String>,
-    pub quantity: Option<i32>,
+    address: String,
+    asset: Option<String>,
+    quantity: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]

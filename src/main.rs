@@ -1,13 +1,8 @@
-extern crate diesel;
-
 use actix_web::{web, App, HttpServer};
 use diesel::{prelude::*, r2d2};
 use dotenvy::dotenv;
 use std::env;
 use std::io;
-mod assets;
-mod balances;
-mod blocks;
 mod query;
 
 #[actix_web::main]
@@ -25,16 +20,6 @@ async fn main() -> io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .route("/api", web::post().to(query::query_data))
-            .route("/asset_info/{asset_name}", web::get().to(assets::get_asset))
-            .route("/balance/{address}", web::get().to(balances::get_balance))
-            .route(
-                "/block/{block_index}",
-                web::get().to(blocks::get_block_by_index),
-            )
-            .route(
-                "/block_hash/{block_hash}",
-                web::get().to(blocks::get_block_by_hash),
-            )
     })
     .bind(("127.0.0.1", 8080))?
     .run()
