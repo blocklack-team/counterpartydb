@@ -17,6 +17,17 @@ pub enum Operator {
     #[serde(rename = "<")]
     LessThan,
 }
+impl Operator {
+    pub fn to_string(&self) -> String {
+        match self {
+            Operator::Equal => "=".to_string(),
+            Operator::StrictEqual => "==".to_string(),
+            Operator::NotEqual => "!=".to_string(),
+            Operator::GreaterThan => ">".to_string(),
+            Operator::LessThan => "<".to_string(),
+        }
+    }
+}
 
 #[derive(Deserialize, Serialize)]
 pub enum FilterOp {
@@ -51,6 +62,7 @@ pub struct QueryData {
     pub limit: i64,
     #[serde(default = "default_offset")]
     pub offset: i64,
+    order_by: Option<String>,
 }
 
 fn default_limit() -> i64 {

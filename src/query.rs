@@ -2,6 +2,8 @@ use actix_web::{error, web, HttpResponse, Responder};
 use counterpartydb::balances::*;
 use counterpartydb::blocks::*;
 use counterpartydb::db::*;
+use counterpartydb::debits::*;
+use counterpartydb::dispensers::*;
 use counterpartydb::models::*;
 use diesel::prelude::*;
 use serde::Deserialize;
@@ -10,6 +12,8 @@ use serde::Deserialize;
 enum QueryResult {
     Balances(Vec<Balance>),
     Blocks(Vec<Block>),
+    Dispensers(Vec<Dispenser>),
+    Debits(Vec<Debits>),
 }
 
 fn _query_data(
@@ -27,6 +31,16 @@ fn _query_data(
             let filters = query_data.filters;
             let blocks = get_blocks(conn, filters, query_data.limit, query_data.offset)?;
             return Ok(Some(QueryResult::Blocks(blocks)));
+        }
+        "get_dispensers" => {
+            let filters = query_data.filters;
+            let dispensers = get_dispensers(conn, filters, query_data.limit, query_data.offset)?;
+            return Ok(Some(QueryResult::Dispensers(dispensers)));
+        }
+        "get_debits" => {
+            let filters = query_data.filters;
+            let debits = get_debits(conn, filters, query_data.limit, query_data.offset)?;
+            return Ok(Some(QueryResult::Debits(debits)));
         }
         _ => {}
     }
@@ -51,6 +65,8 @@ pub async fn query_data(
     match asset_in_db {
         Some(QueryResult::Balances(balances)) => Ok(HttpResponse::Ok().json(balances)),
         Some(QueryResult::Blocks(blocks)) => Ok(HttpResponse::Ok().json(blocks)),
+        Some(QueryResult::Dispensers(dispensers)) => Ok(HttpResponse::Ok().json(dispensers)),
+        Some(QueryResult::Debits(debits)) => Ok(HttpResponse::Ok().json(debits)),
         //TODO: ADD more results
         _ => Ok(HttpResponse::NotFound().finish()),
     }

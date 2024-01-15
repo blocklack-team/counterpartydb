@@ -1,11 +1,16 @@
 use crate::db::*;
-use crate::models::Balance;
+use crate::models::Debits;
 use diesel::{prelude::*, sql_query};
+
 fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Option<String> {
+    println!("Field: {:?}", field);
     let column_name = match field {
+        "block_index" => "block_index",
         "address" => "address",
         "asset" => "asset",
         "quantity" => "quantity",
+        "action" => "action",
+        "event" => "event",
         _ => return Some("".to_string()), // Salta filtros no reconocidos
     };
     let sql_operator = op.to_string();
@@ -40,19 +45,20 @@ pub fn generate_sql_query(filters: Vec<DynamicFilter>, limit: i64, offset: i64) 
     let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
 
     Some(format!(
-        "SELECT * FROM balances WHERE {} {}",
+        "SELECT * FROM debits WHERE {} {}",
         filter_string, limit_offset
     ))
 }
 
-pub fn get_balances(
+pub fn get_debits(
     conn: &mut SqliteConnection,
     filters: Vec<DynamicFilter>,
     limit: i64,
     offset: i64,
-) -> Result<Vec<Balance>, DbError> {
+) -> Result<Vec<Debits>, DbError> {
     let query_string = generate_sql_query(filters, limit, offset);
-    let result = sql_query(&query_string.unwrap()).load::<Balance>(conn);
+    println!("Query string: {:?}", query_string);
+    let result = sql_query(&query_string.unwrap()).load::<Debits>(conn);
     match result {
         Ok(r) => Ok(r),
         Err(_e) => Err(Box::new(std::io::Error::new(

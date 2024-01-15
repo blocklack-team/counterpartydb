@@ -1,11 +1,22 @@
 use crate::db::*;
-use crate::models::Balance;
+use crate::models::Dispenser;
 use diesel::{prelude::*, sql_query};
 fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Option<String> {
+    println!("Field: {:?}", field);
     let column_name = match field {
-        "address" => "address",
+        "source" => "source",
         "asset" => "asset",
-        "quantity" => "quantity",
+        "give_quantity" => "give_quantity",
+        "escrow_quantity" => "escrow_quantity",
+        "satoshirate" => "satoshirate",
+        "status" => "status",
+        "give_remaining" => "give_remaining",
+        "oracle_address" => "oracle_address",
+        "last_status_tx_hash" => "last_status_tx_hash",
+        "origin" => "origin",
+        "tx_index" => "tx_index",
+        "tx_hash" => "tx_hash",
+        "block_index" => "block_index",
         _ => return Some("".to_string()), // Salta filtros no reconocidos
     };
     let sql_operator = op.to_string();
@@ -40,19 +51,20 @@ pub fn generate_sql_query(filters: Vec<DynamicFilter>, limit: i64, offset: i64) 
     let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
 
     Some(format!(
-        "SELECT * FROM balances WHERE {} {}",
+        "SELECT * FROM dispensers WHERE {} {}",
         filter_string, limit_offset
     ))
 }
 
-pub fn get_balances(
+pub fn get_dispensers(
     conn: &mut SqliteConnection,
     filters: Vec<DynamicFilter>,
     limit: i64,
     offset: i64,
-) -> Result<Vec<Balance>, DbError> {
+) -> Result<Vec<Dispenser>, DbError> {
     let query_string = generate_sql_query(filters, limit, offset);
-    let result = sql_query(&query_string.unwrap()).load::<Balance>(conn);
+    println!("Query string: {:?}", query_string);
+    let result = sql_query(&query_string.unwrap()).load::<Dispenser>(conn);
     match result {
         Ok(r) => Ok(r),
         Err(_e) => Err(Box::new(std::io::Error::new(
