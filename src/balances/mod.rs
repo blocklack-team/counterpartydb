@@ -13,32 +13,31 @@ pub fn get_balances(
     for filter in filters {
         let field = filter.field.as_str();
         let value = filter.value;
-        let operator = filter.operator.as_str();
         match field {
             "address" => {
                 if let FilterValue::String(s) = value {
-                    query = match operator {
-                        "=" => query.filter(address.eq(s)),
-                        "!=" => query.filter(address.ne(s)),
+                    query = match filter.op {
+                        Operator::Equal => query.filter(address.eq(s)),
+                        Operator::NotEqual => query.filter(address.ne(s)),
                         _ => query,
                     }
                 }
             }
             "quantity" => {
                 if let FilterValue::Integer32(i) = value {
-                    query = match operator {
-                        ">" => query.filter(quantity.gt(i)),
-                        "<" => query.filter(quantity.lt(i)),
-                        "=" => query.filter(quantity.eq(i)),
+                    query = match filter.op {
+                        Operator::GreaterThan => query.filter(quantity.gt(i)),
+                        Operator::LessThan => query.filter(quantity.lt(i)),
+                        Operator::Equal => query.filter(quantity.eq(i)),
                         _ => query,
                     }
                 }
             }
             "asset" => {
                 if let FilterValue::String(s) = value {
-                    query = match operator {
-                        "=" => query.filter(asset.eq(s)),
-                        "!=" => query.filter(asset.ne(s)),
+                    query = match filter.op {
+                        Operator::Equal => query.filter(asset.eq(s)),
+                        Operator::NotEqual => query.filter(asset.ne(s)),
                         _ => query,
                     }
                 }
