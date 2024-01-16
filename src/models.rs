@@ -183,3 +183,66 @@ pub struct BetExpiration {
     pub source: String,
     pub block_index: i32,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
+#[diesel(table_name = issuances)]
+pub struct Issuance {
+    pub tx_index: Option<i32>,
+    pub tx_hash: Option<String>,
+    pub msg_index: Option<i32>,
+    pub block_index: Option<i32>,
+    pub asset: Option<String>,
+    pub quantity: Option<i32>,
+    pub divisible: Option<bool>,
+    pub source: Option<String>,
+    pub issuer: Option<String>,
+    pub transfer: Option<bool>,
+    pub callable: Option<bool>,
+    pub call_date: Option<i32>,
+    pub call_price: Option<f32>,
+    pub description: Option<String>,
+    pub fee_paid: Option<i32>,
+    pub locked: Option<bool>,
+    pub status: Option<String>,
+    pub asset_longname: Option<String>,
+    pub reset: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
+#[diesel(table_name = dispenses)]
+pub struct Dispense {
+    pub tx_index: i32,
+    pub dispense_index: Option<i32>,
+    pub tx_hash: Option<String>,
+    pub block_index: Option<i32>,
+    pub source: Option<String>,
+    pub destination: Option<String>,
+    pub asset: Option<String>,
+    pub dispense_quantity: Option<i32>,
+    pub dispenser_tx_hash: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
+#[diesel(table_name = messages)]
+pub struct Message {
+    pub message_index: i32,
+    pub block_index: Option<i32>,
+    pub command: Option<String>,
+    pub category: Option<String>,
+    pub bindings: Option<String>,
+    pub timestamp: Option<i32>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
+#[diesel(table_name = sends)]
+pub struct Send {
+    pub tx_index: i32,
+    pub tx_hash: Option<String>,
+    pub block_index: Option<i32>,
+    pub source: Option<String>,
+    pub destination: Option<String>,
+    pub asset: Option<String>,
+    pub quantity: Option<i32>,
+    pub status: Option<String>,
+    pub msg_index: Option<i32>,
+    pub memo: Option<Vec<u8>>, // BinaryField is represented as Vec<u8> in Rust
+}

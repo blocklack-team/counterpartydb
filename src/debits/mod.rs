@@ -19,6 +19,8 @@ fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Opti
         FilterValue::Integer64(i) => i.to_string(),
         FilterValue::String(s) => format!("'{}'", s.escape_default()),
         FilterValue::Integer32(i) => i.to_string(),
+        FilterValue::Float32(f) => f.to_string(),
+        FilterValue::Float64(f) => f.to_string(),
     };
 
     Some(format!("{} {} {}", column_name, sql_operator, value_str))

@@ -180,3 +180,66 @@ table! {
         block_index -> Integer,
     }
 }
+
+table! {
+    issuances (tx_index) {
+        tx_index -> Nullable<Integer>,
+        tx_hash -> Nullable<Text>,
+        msg_index -> Nullable<Integer>,
+        block_index -> Nullable<Integer>,
+        asset -> Nullable<Text>,
+        quantity -> Nullable<Integer>,
+        divisible -> Nullable<Bool>,
+        source -> Nullable<Text>,
+        issuer -> Nullable<Text>,
+        transfer -> Nullable<Bool>,
+        callable -> Nullable<Bool>,
+        call_date -> Nullable<Integer>,
+        call_price -> Nullable<Float>,
+        description -> Nullable<Text>,
+        fee_paid -> Nullable<Integer>,
+        locked -> Nullable<Bool>,
+        status -> Nullable<Text>,
+        asset_longname -> Nullable<Text>,
+        reset -> Nullable<Bool>,
+    }
+}
+
+table! {
+    dispenses (tx_index) {
+        tx_index -> Integer,
+        dispense_index -> Nullable<Integer>,
+        tx_hash -> Nullable<Text>,
+        block_index -> Nullable<Integer>,
+        source -> Nullable<Text>,
+        destination -> Nullable<Text>,
+        asset -> Nullable<Text>,
+        dispense_quantity -> Nullable<Integer>,
+        dispenser_tx_hash -> Nullable<Text>,
+    }
+}
+table! {
+    messages (message_index) {
+        message_index -> Integer,
+        block_index -> Nullable<Integer>,
+        command -> Nullable<Text>,
+        category -> Nullable<Text>,
+        bindings -> Nullable<Text>,
+        timestamp -> Nullable<Integer>,
+    }
+}
+
+table! {
+    sends (tx_index) {
+        tx_index -> Integer,
+        tx_hash -> Nullable<Text>,
+        block_index -> Nullable<Integer>,
+        source -> Nullable<Text>,
+        destination -> Nullable<Text>,
+        asset -> Nullable<Text>,
+        quantity -> Nullable<Integer>,
+        status -> Nullable<Text>,
+        msg_index -> Nullable<Integer>,
+        memo -> Nullable<Binary>,
+    }
+}

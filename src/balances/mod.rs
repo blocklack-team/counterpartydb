@@ -1,6 +1,7 @@
 use crate::db::*;
 use crate::models::Balance;
 use diesel::{prelude::*, sql_query};
+
 fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Option<String> {
     let column_name = match field {
         "address" => "address",
@@ -14,12 +15,19 @@ fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Opti
         FilterValue::Integer64(i) => i.to_string(),
         FilterValue::String(s) => format!("'{}'", s.escape_default()),
         FilterValue::Integer32(i) => i.to_string(),
+        FilterValue::Float32(f) => f.to_string(),
+        FilterValue::Float64(f) => f.to_string(),
     };
 
     Some(format!("{} {} {}", column_name, sql_operator, value_str))
 }
 
-pub fn generate_sql_query(filters: Vec<DynamicFilter>, limit: i64, offset: i64) -> Option<String> {
+pub fn generate_sql_query(
+    filters: Vec<DynamicFilter>,
+    limit: i64,
+    offset: i64,
+    filterop: FilterOp,
+) -> Option<String> {
     let mut filter_clauses: Vec<String> = vec![];
 
     for filter in filters {
@@ -35,8 +43,11 @@ pub fn generate_sql_query(filters: Vec<DynamicFilter>, limit: i64, offset: i64) 
     if filter_clauses.is_empty() {
         return None;
     }
-
-    let filter_string = filter_clauses.join(" AND ");
+    let filter_string = match filterop {
+        FilterOp::And => filter_clauses.join(" AND "),
+        FilterOp::Or => filter_clauses.join(" OR "),
+    };
+    println!("filter_string: {}", filter_string);
     let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
 
     Some(format!(
@@ -50,8 +61,9 @@ pub fn get_balances(
     filters: Vec<DynamicFilter>,
     limit: i64,
     offset: i64,
+    filterop: FilterOp,
 ) -> Result<Vec<Balance>, DbError> {
-    let query_string = generate_sql_query(filters, limit, offset);
+    let query_string = generate_sql_query(filters, limit, offset, filterop);
     let result = sql_query(&query_string.unwrap()).load::<Balance>(conn);
     match result {
         Ok(r) => Ok(r),

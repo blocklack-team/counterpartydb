@@ -43,6 +43,8 @@ pub enum FilterValue {
     String(String),
     Integer64(i64),
     Integer32(i32),
+    Float64(f64),
+    Float32(f32),
 }
 #[derive(Deserialize, Serialize)]
 pub struct DynamicFilter {

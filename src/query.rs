@@ -1,19 +1,28 @@
 use actix_web::{error, web, HttpResponse, Responder};
 use counterpartydb::balances::*;
 use counterpartydb::blocks::*;
+use counterpartydb::burns::*;
 use counterpartydb::db::*;
 use counterpartydb::debits::*;
 use counterpartydb::dispensers::*;
+use counterpartydb::dispenses::*;
+use counterpartydb::issuances::*;
+use counterpartydb::messages::*;
 use counterpartydb::models::*;
+use counterpartydb::sends::*;
 use diesel::prelude::*;
 use serde::Deserialize;
-
 #[derive(Deserialize)]
 enum QueryResult {
     Balances(Vec<Balance>),
     Blocks(Vec<Block>),
     Dispensers(Vec<Dispenser>),
     Debits(Vec<Debits>),
+    Burn(Vec<Burn>),
+    Issuances(Vec<Issuance>),
+    Dispenses(Vec<Dispense>),
+    Messages(Vec<Message>),
+    Sends(Vec<Send>),
 }
 
 fn _query_data(
@@ -21,26 +30,49 @@ fn _query_data(
     query_data: QueryData,
 ) -> Result<Option<QueryResult>, DbError> {
     let method = query_data.method;
+    let filterop = query_data.filter_op;
+    let filters = query_data.filters;
     match method.as_str() {
         "get_balances" => {
-            let filters = query_data.filters;
-            let balances = get_balances(conn, filters, query_data.limit, query_data.offset)?;
+            let balances =
+                get_balances(conn, filters, query_data.limit, query_data.offset, filterop)?;
             return Ok(Some(QueryResult::Balances(balances)));
         }
         "get_blocks" => {
-            let filters = query_data.filters;
-            let blocks = get_blocks(conn, filters, query_data.limit, query_data.offset)?;
+            let blocks = get_blocks(conn, filters, query_data.limit, query_data.offset, filterop)?;
             return Ok(Some(QueryResult::Blocks(blocks)));
         }
         "get_dispensers" => {
-            let filters = query_data.filters;
-            let dispensers = get_dispensers(conn, filters, query_data.limit, query_data.offset)?;
+            let dispensers =
+                get_dispensers(conn, filters, query_data.limit, query_data.offset, filterop)?;
             return Ok(Some(QueryResult::Dispensers(dispensers)));
         }
         "get_debits" => {
-            let filters = query_data.filters;
             let debits = get_debits(conn, filters, query_data.limit, query_data.offset)?;
             return Ok(Some(QueryResult::Debits(debits)));
+        }
+        "get_burns" => {
+            let burns = get_burns(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            return Ok(Some(QueryResult::Burn(burns)));
+        }
+        "get_issuances" => {
+            let issuances =
+                get_issuances(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            return Ok(Some(QueryResult::Issuances(issuances)));
+        }
+        "get_dispenses" => {
+            let dispenses =
+                get_dispenses(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            return Ok(Some(QueryResult::Dispenses(dispenses)));
+        }
+        "get_messages" => {
+            let messages =
+                get_messages(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            return Ok(Some(QueryResult::Messages(messages)));
+        }
+        "get_sends" => {
+            let sends = get_sends(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            return Ok(Some(QueryResult::Sends(sends)));
         }
         _ => {}
     }
@@ -67,6 +99,10 @@ pub async fn query_data(
         Some(QueryResult::Blocks(blocks)) => Ok(HttpResponse::Ok().json(blocks)),
         Some(QueryResult::Dispensers(dispensers)) => Ok(HttpResponse::Ok().json(dispensers)),
         Some(QueryResult::Debits(debits)) => Ok(HttpResponse::Ok().json(debits)),
+        Some(QueryResult::Burn(burns)) => Ok(HttpResponse::Ok().json(burns)),
+        Some(QueryResult::Issuances(issuances)) => Ok(HttpResponse::Ok().json(issuances)),
+        Some(QueryResult::Dispenses(dispenses)) => Ok(HttpResponse::Ok().json(dispenses)),
+        Some(QueryResult::Messages(messages)) => Ok(HttpResponse::Ok().json(messages)),
         //TODO: ADD more results
         _ => Ok(HttpResponse::NotFound().finish()),
     }
