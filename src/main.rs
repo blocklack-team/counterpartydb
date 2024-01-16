@@ -13,6 +13,8 @@ async fn main() -> io::Result<()> {
 
     env_logger::init_from_env(Env::default().default_filter_or("info"));
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let port_str = env::var("PORT").expect("PORT must be set");
+    let port: u16 = port_str.parse().expect("PORT must be an integer");
     let manager = r2d2::ConnectionManager::<SqliteConnection>::new(database_url);
     let pool = r2d2::Pool::builder()
         .build(manager)
@@ -26,7 +28,7 @@ async fn main() -> io::Result<()> {
             .wrap(Logger::default())
             .wrap(Logger::new("%a %{User-Agent}i"))
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("127.0.0.1", port))?
     .run()
     .await
 }
