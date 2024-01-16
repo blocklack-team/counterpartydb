@@ -1,39 +1,75 @@
-use counterpartydb::models::*;
-use diesel::prelude::*;
-use counterpartydb::*;
-use actix_web::{error,  web,  HttpResponse,  Responder};
-use diesel::r2d2;
-type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
+use crate::db::*;
+use crate::models::Balance;
+use diesel::{prelude::*, sql_query};
 
-type DbError = Box<dyn std::error::Error + Send + Sync>;
+fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Option<String> {
+    let column_name = match field {
+        "address" => "address",
+        "asset" => "asset",
+        "quantity" => "quantity",
+        _ => return Some("".to_string()), // Salta filtros no reconocidos
+    };
+    let sql_operator = op.to_string();
 
-fn _get_balance(
+    let value_str = match value {
+        FilterValue::Integer64(i) => i.to_string(),
+        FilterValue::String(s) => format!("'{}'", s.escape_default()),
+        FilterValue::Integer32(i) => i.to_string(),
+        FilterValue::Float32(f) => f.to_string(),
+        FilterValue::Float64(f) => f.to_string(),
+    };
+
+    Some(format!("{} {} {}", column_name, sql_operator, value_str))
+}
+
+pub fn generate_sql_query(
+    filters: Vec<DynamicFilter>,
+    limit: i64,
+    offset: i64,
+    filterop: FilterOp,
+) -> Option<String> {
+    let mut filter_clauses: Vec<String> = vec![];
+
+    for filter in filters {
+        let field = filter.field.as_str();
+        let value = filter.value;
+        let op = filter.op;
+
+        if let Some(filter_clause) = generate_filter_clause(field, value, op) {
+            filter_clauses.push(filter_clause);
+        }
+    }
+
+    if filter_clauses.is_empty() {
+        return None;
+    }
+    let filter_string = match filterop {
+        FilterOp::And => filter_clauses.join(" AND "),
+        FilterOp::Or => filter_clauses.join(" OR "),
+    };
+    println!("filter_string: {}", filter_string);
+    let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
+
+    Some(format!(
+        "SELECT * FROM balances WHERE {} {}",
+        filter_string, limit_offset
+    ))
+}
+
+pub fn get_balances(
     conn: &mut SqliteConnection,
-    address_owner: String) -> Result<Option<Vec<models::Balance>>, DbError> {
-    use counterpartydb::schema::balances::dsl::*;
-    let result = balances
-        .filter(address.eq(address_owner))
-        .load::<Balance>(conn)
-        .optional()?;
-
-    Ok(result)
-} 
-
-pub async fn get_balance(
-    pool: web::Data<DbPool>,
-    address: web::Path<(String,)>,
-) -> actix_web::Result<impl Responder> {
-    let (addres_owner,) = address.into_inner();
-
-    let asset_in_db = web::block(move || {
-        // Obtaining a connection from the pool is also a potentially blocking operation.
-        // So, it should be called within the `web::block` closure, as well.
-        let mut conn = pool.get().expect("couldn't get db connection from pool");
-
-        _get_balance(&mut conn, addres_owner)
-    })
-    .await?
-    .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().json(asset_in_db))
+    filters: Vec<DynamicFilter>,
+    limit: i64,
+    offset: i64,
+    filterop: FilterOp,
+) -> Result<Vec<Balance>, DbError> {
+    let query_string = generate_sql_query(filters, limit, offset, filterop);
+    let result = sql_query(&query_string.unwrap()).load::<Balance>(conn);
+    match result {
+        Ok(r) => Ok(r),
+        Err(_e) => Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Unable to generate SQL query.",
+        ))),
+    }
 }

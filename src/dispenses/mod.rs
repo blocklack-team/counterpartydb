@@ -1,11 +1,17 @@
 use crate::db::*;
-use crate::models::Block;
+use crate::models::Dispense;
 use diesel::{prelude::*, sql_query};
 fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Option<String> {
     let column_name = match field {
+        "tx_index" => "tx_index",
+        "dispense_index" => "dispense_index",
+        "tx_hash" => "tx_hash",
         "block_index" => "block_index",
-        "block_hash" => "block_hash",
-        "block_time" => "block_time",
+        "source" => "source",
+        "destination" => "destination",
+        "asset" => "asset",
+        "dispense_quantity" => "dispense_quantity",
+        "dispenser_tx_hash" => "dispenser_tx_hash",
         _ => return Some("".to_string()), // Salta filtros no reconocidos
     };
     let sql_operator = op.to_string();
@@ -50,20 +56,21 @@ pub fn generate_sql_query(
     let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
 
     Some(format!(
-        "SELECT * FROM blocks WHERE {} {}",
+        "SELECT * FROM dispenses WHERE {} {}",
         filter_string, limit_offset
     ))
 }
 
-pub fn get_blocks(
+pub fn get_dispenses(
     conn: &mut SqliteConnection,
     filters: Vec<DynamicFilter>,
     limit: i64,
     offset: i64,
     filterop: FilterOp,
-) -> Result<Vec<Block>, DbError> {
+) -> Result<Vec<Dispense>, DbError> {
     let query_string = generate_sql_query(filters, limit, offset, filterop);
-    let result = sql_query(&query_string.unwrap()).load::<Block>(conn);
+    println!("Query string: {:?}", query_string);
+    let result = sql_query(&query_string.unwrap()).load::<Dispense>(conn);
     match result {
         Ok(r) => Ok(r),
         Err(_e) => Err(Box::new(std::io::Error::new(

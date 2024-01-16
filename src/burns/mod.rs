@@ -1,18 +1,22 @@
 use crate::db::*;
-use crate::models::Block;
+use crate::models::Burn;
 use diesel::{prelude::*, sql_query};
 fn generate_filter_clause(field: &str, value: FilterValue, op: Operator) -> Option<String> {
     let column_name = match field {
+        "tx_index" => "tx_index",
+        "tx_hash" => "tx_hash",
         "block_index" => "block_index",
-        "block_hash" => "block_hash",
-        "block_time" => "block_time",
+        "source" => "source",
+        "burned" => "burned",
+        "earned" => "earned",
+        "status" => "status",
         _ => return Some("".to_string()), // Salta filtros no reconocidos
     };
     let sql_operator = op.to_string();
 
     let value_str = match value {
         FilterValue::Integer64(i) => i.to_string(),
-        FilterValue::String(s) => format!("'{}'", s.escape_default()),
+        FilterValue::String(s) => format!("'{}'", s.to_uppercase()),
         FilterValue::Integer32(i) => i.to_string(),
         FilterValue::Float32(f) => f.to_string(),
         FilterValue::Float64(f) => f.to_string(),
@@ -50,20 +54,20 @@ pub fn generate_sql_query(
     let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
 
     Some(format!(
-        "SELECT * FROM blocks WHERE {} {}",
+        "SELECT * FROM burns WHERE {} {}",
         filter_string, limit_offset
     ))
 }
 
-pub fn get_blocks(
+pub fn get_burns(
     conn: &mut SqliteConnection,
     filters: Vec<DynamicFilter>,
     limit: i64,
     offset: i64,
     filterop: FilterOp,
-) -> Result<Vec<Block>, DbError> {
+) -> Result<Vec<Burn>, DbError> {
     let query_string = generate_sql_query(filters, limit, offset, filterop);
-    let result = sql_query(&query_string.unwrap()).load::<Block>(conn);
+    let result = sql_query(&query_string.unwrap()).load::<Burn>(conn);
     match result {
         Ok(r) => Ok(r),
         Err(_e) => Err(Box::new(std::io::Error::new(

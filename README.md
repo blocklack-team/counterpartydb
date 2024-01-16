@@ -17,55 +17,103 @@ This API enables dynamic querying of database tables, allowing clients to specif
 
 ## Query Functions
 
-- `get_balances`: A function to query balance-related data from the database based on provided filters, limit, and offset.
-
-- `get_blocks`: Similar to `get_balances`, but for querying block-related data.
-
-## Endpoint
-
-- `query_data`: An async Actix-web endpoint that processes incoming `QueryData` JSON requests. It determines the type of query based on the `method` field in `QueryData`, applies filters, and returns the corresponding data.
+- [x] balances
+- [x] Dispensers
+- [x] Burns
+- [x] Issuances
+- [x] Blocks
+- [x] Debits
+- [x] Messages
+- [x] Sends
+- [x] Dispenses
+- [ ] Bets
+- [ ] Dividends
+- [ ] Rps
 
 ## Example Usage
 
-Clients can send a JSON request specifying the query type, filters, limit, and offset:
-localhost:8080/api
+- configure the  `.env`
+- Example
+  
+```env
+DATABASE_URL=/db/counterparty.db
+PORT=8080
+```
 
-```json
-{
-    "method": "get_blocks",
+to run server 
+```
+cargo run
+```
+production (better perfomance)
+```
+cargo run --release
+```
+## Example Curl 
+  
+```curl
+  curl -X POST \
+  http://localhost:8080/api \
+  -H 'Content-Type: application/json' \
+  -d "{
+    "method": "get_dispensers",
     "filters": [
         {
             "field": "block_index",
-            "value": {"Integer64": 100},
-            "operator": ">"
+            "value": 278270,
+            "op": ">"
         }
     ],
+    "filterop": "AND",
     "limit": 10,
-    "offset": 0
-}
+    "offset": 0 }'
+
 ```
 
-```json 
-{
+## Multiple filters
+
+```curl
+curl -X POST \
+  http://localhost:8080/api \
+  -H 'Content-Type: application/json' \
+  -d '{
     "method": "get_balances",
     "filters": [
         {
             "field": "address",
-            "value": {
-                "String": "1Pcpxw6wJwXABhjCspe3CNf3gqSeh6eien"
-            },
-            "operator": "="
+            "value": "1AeqgtHedfA2yVXH6GiKLS2JGkfWfgyTC6",
+            "op": "="
         },
-                {
+        {
             "field": "asset",
-            "value": {
-                "String": "XCP"
-            },
-            "operator": "="
+            "value":  "XCP",
+            "op": "="
         }
     ],
     "limit": 10,
-    "offset": 0
-}
-
+    "offset": 0 }'
 ```
+## join using OR & AND
+```curl
+curl -X POST \
+  http://localhost:8080/api \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "method": "get_balances",
+    "filters": [
+        {
+            "field": "address",
+            "value": "1AeqgtHedfA2yVXH6GiKLS2JGkfWfgyTC6",
+            "op": "="
+        },
+        {
+            "field": "address",
+            "value": "1LhEGAPUZnfNDbh7oFogdekUyTW8NBfW3g",
+            "op": "="
+        }
+    ],
+    "filter_op": "OR",
+    "limit": 100,
+    "offset": 0 }'
+```
+#TODO: Add more models and Schemas
+#TODO: Find away to build sql query without repeat code.
