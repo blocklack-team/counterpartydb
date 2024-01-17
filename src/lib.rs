@@ -1,4 +1,5 @@
 pub mod balances;
+pub mod bets;
 pub mod blocks;
 pub mod burns;
 pub mod db;

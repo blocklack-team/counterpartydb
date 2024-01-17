@@ -1,5 +1,6 @@
 use actix_web::{error, web, HttpResponse, Responder};
 use counterpartydb::balances::*;
+use counterpartydb::bets::*;
 use counterpartydb::blocks::*;
 use counterpartydb::burns::*;
 use counterpartydb::db::*;
@@ -23,6 +24,7 @@ enum QueryResult {
     Dispenses(Vec<Dispense>),
     Messages(Vec<Message>),
     Sends(Vec<Send>),
+    Bets(Vec<Bet>),
 }
 
 fn _query_data(
@@ -32,47 +34,128 @@ fn _query_data(
     let method = query_data.method;
     let filterop = query_data.filter_op;
     let filters = query_data.filters;
+    let order = query_data.order;
+    let order_by = query_data.order_by;
     match method.as_str() {
         "get_balances" => {
-            let balances =
-                get_balances(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let balances = get_balances(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Balances(balances)));
         }
         "get_blocks" => {
-            let blocks = get_blocks(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let blocks = get_blocks(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Blocks(blocks)));
         }
         "get_dispensers" => {
-            let dispensers =
-                get_dispensers(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let dispensers = get_dispensers(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Dispensers(dispensers)));
         }
         "get_debits" => {
-            let debits = get_debits(conn, filters, query_data.limit, query_data.offset)?;
+            let debits = get_debits(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Debits(debits)));
         }
         "get_burns" => {
-            let burns = get_burns(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let burns = get_burns(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Burn(burns)));
         }
         "get_issuances" => {
-            let issuances =
-                get_issuances(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let issuances = get_issuances(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Issuances(issuances)));
         }
         "get_dispenses" => {
-            let dispenses =
-                get_dispenses(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let dispenses = get_dispenses(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Dispenses(dispenses)));
         }
         "get_messages" => {
-            let messages =
-                get_messages(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let messages = get_messages(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Messages(messages)));
         }
         "get_sends" => {
-            let sends = get_sends(conn, filters, query_data.limit, query_data.offset, filterop)?;
+            let sends = get_sends(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
             return Ok(Some(QueryResult::Sends(sends)));
+        }
+        "get_bets" => {
+            let bets = get_bets(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
+            return Ok(Some(QueryResult::Bets(bets)));
         }
         _ => {}
     }
@@ -103,6 +186,8 @@ pub async fn query_data(
         Some(QueryResult::Issuances(issuances)) => Ok(HttpResponse::Ok().json(issuances)),
         Some(QueryResult::Dispenses(dispenses)) => Ok(HttpResponse::Ok().json(dispenses)),
         Some(QueryResult::Messages(messages)) => Ok(HttpResponse::Ok().json(messages)),
+        Some(QueryResult::Sends(sends)) => Ok(HttpResponse::Ok().json(sends)),
+        Some(QueryResult::Bets(bets)) => Ok(HttpResponse::Ok().json(bets)),
         //TODO: ADD more results
         _ => Ok(HttpResponse::NotFound().finish()),
     }

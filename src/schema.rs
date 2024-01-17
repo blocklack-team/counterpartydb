@@ -13,7 +13,7 @@ table! {
     balances (address) {
         address -> Text,
         asset -> Nullable<Text>,
-        quantity -> Nullable<Integer>,
+        quantity -> Nullable<BigInt>,
     }
 }
 
@@ -36,9 +36,9 @@ table! {
         block_index -> Nullable<Integer>,
         source -> Nullable<Text>,
         asset -> Nullable<Text>,
-        give_quantity -> Nullable<Integer>,
-        escrow_quantity -> Nullable<Integer>,
-        satoshirate -> Nullable<Integer>,
+        give_quantity -> Nullable<BigInt>,
+        escrow_quantity -> Nullable<BigInt>,
+        satoshirate -> Nullable<BigInt>,
         status -> Nullable<Integer>,
         give_remaining -> Nullable<Integer>,
         oracle_address -> Nullable<Text>,
@@ -52,7 +52,7 @@ table! {
         block_index -> Integer,
         address -> Nullable<Text>,
         asset -> Nullable<Text>,
-        quantity -> Nullable<Integer>,
+        quantity -> Nullable<BigInt>,
         action -> Nullable<Text>,
         event -> Nullable<Text>,
     }
@@ -107,15 +107,15 @@ table! {
         feed_address -> Text,
         bet_type -> Integer,
         deadline -> Integer,
-        wager_quantity -> Integer,
-        wager_remaining -> Integer,
-        counterwager_quantity -> Integer,
-        counterwager_remaining -> Integer,
+        wager_quantity -> BigInt,
+        wager_remaining -> BigInt,
+        counterwager_quantity -> BigInt,
+        counterwager_remaining -> BigInt,
         target_value -> Float,
         leverage -> Integer,
         expiration -> Integer,
         expire_index -> Integer,
-        fee_fraction_int -> Integer,
+        fee_fraction_int -> BigInt,
         status -> Text,
     }
 }
@@ -132,7 +132,7 @@ table! {
         tx0_bet_type -> Integer,
         tx1_bet_type -> Integer,
         feed_address -> Text,
-        initial_value -> Integer,
+        initial_value -> BigInt,
         deadline -> Integer,
         target_value -> Float,
         leverage -> Integer,
@@ -144,7 +144,7 @@ table! {
         tx0_expiration -> Integer,
         tx1_expiration -> Integer,
         match_expire_index -> Integer,
-        fee_fraction_int -> Integer,
+        fee_fraction_int -> BigInt,
         status -> Text,
     }
 }
@@ -159,7 +159,7 @@ table! {
         bull_credit -> Integer,
         bear_credit -> Integer,
         escrow_less_fee -> Integer,
-        fee -> Integer,
+        fee -> BigInt,
     }
 }
 
@@ -188,7 +188,7 @@ table! {
         msg_index -> Nullable<Integer>,
         block_index -> Nullable<Integer>,
         asset -> Nullable<Text>,
-        quantity -> Nullable<Integer>,
+        quantity -> Nullable<BigInt>,
         divisible -> Nullable<Bool>,
         source -> Nullable<Text>,
         issuer -> Nullable<Text>,
@@ -197,7 +197,7 @@ table! {
         call_date -> Nullable<Integer>,
         call_price -> Nullable<Float>,
         description -> Nullable<Text>,
-        fee_paid -> Nullable<Integer>,
+        fee_paid -> Nullable<BigInt>,
         locked -> Nullable<Bool>,
         status -> Nullable<Text>,
         asset_longname -> Nullable<Text>,
@@ -237,7 +237,7 @@ table! {
         source -> Nullable<Text>,
         destination -> Nullable<Text>,
         asset -> Nullable<Text>,
-        quantity -> Nullable<Integer>,
+        quantity -> Nullable<BigInt>,
         status -> Nullable<Text>,
         msg_index -> Nullable<Integer>,
         memo -> Nullable<Binary>,

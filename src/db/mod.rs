@@ -17,6 +17,7 @@ pub enum Operator {
     #[serde(rename = "<")]
     LessThan,
 }
+
 impl Operator {
     pub fn to_string(&self) -> String {
         match self {
@@ -27,6 +28,14 @@ impl Operator {
             Operator::LessThan => "<".to_string(),
         }
     }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub enum Order {
+    #[serde(rename = "ASC")]
+    ASC,
+    #[serde(rename = "DESC")]
+    DESC,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -64,7 +73,10 @@ pub struct QueryData {
     pub limit: i64,
     #[serde(default = "default_offset")]
     pub offset: i64,
-    order_by: Option<String>,
+    #[serde(default = "default_order")]
+    pub order: Order,
+    #[serde(default = "default_order_by")]
+    pub order_by: String,
 }
 
 fn default_limit() -> i64 {
@@ -78,4 +90,91 @@ fn default_filter_op() -> FilterOp {
 }
 fn default_operator() -> Operator {
     Operator::Equal
+}
+
+fn default_order() -> Order {
+    Order::ASC
+}
+
+fn default_order_by() -> String {
+    String::new()
+}
+
+fn generate_filter_clause(
+    field: &str,
+    value: FilterValue,
+    op: Operator,
+    columns: &Vec<&str>,
+) -> Option<String> {
+    let column_name;
+
+    if columns.contains(&field) {
+        column_name = field.to_string();
+    } else {
+        return Some("".to_string());
+    }
+
+    let sql_operator = op.to_string();
+
+    let value_str = match value {
+        FilterValue::Integer64(i) => i.to_string(),
+        FilterValue::String(s) => format!("'{}'", s.escape_default()),
+        FilterValue::Integer32(i) => i.to_string(),
+        FilterValue::Float32(f) => f.to_string(),
+        FilterValue::Float64(f) => f.to_string(),
+    };
+
+    Some(format!("{} {} {}", column_name, sql_operator, value_str))
+}
+
+pub fn generate_sql_query(
+    filters: Vec<DynamicFilter>,
+    limit: i64,
+    offset: i64,
+    filterop: FilterOp,
+    order: Order,
+    order_by: String,
+    columns: &Vec<&str>,
+    table_name: &str,
+) -> Option<String> {
+    let mut filter_clauses: Vec<String> = vec![];
+    for filter in filters {
+        let field = filter.field.as_str();
+        let value = filter.value;
+        let op = filter.op;
+
+        if let Some(filter_clause) = generate_filter_clause(field, value, op, columns) {
+            filter_clauses.push(filter_clause);
+        }
+    }
+
+    if filter_clauses.is_empty() {
+        let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
+        return Some(format!("SELECT * FROM {} {}", table_name, limit_offset));
+    }
+    let filter_string = match filterop {
+        FilterOp::And => filter_clauses.join(" AND "),
+        FilterOp::Or => filter_clauses.join(" OR "),
+    };
+    let mut order_by_default = order_by.clone();
+    if order_by.is_empty() == false {
+        //check by order_by field is valid
+        if columns.contains(&order_by.as_str()) == false {
+            println!("Invalid order_by field: {}", order_by);
+            return None;
+        }
+    } else {
+        order_by_default = "quantity".to_string();
+    }
+    let order_clause = match order {
+        Order::ASC => format!("ORDER BY {} ASC", order_by_default),
+        Order::DESC => format!("ORDER BY {} DESC", order_by_default),
+    };
+    println!("order_clause: {}", order_clause);
+    let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
+
+    Some(format!(
+        "SELECT * FROM {} WHERE {} {} {}",
+        table_name, filter_string, order_clause, limit_offset
+    ))
 }
