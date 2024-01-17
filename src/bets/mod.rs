@@ -1,8 +1,9 @@
 use crate::db::*;
-use crate::models::{get_all_columns, Balance};
+use crate::models::get_all_columns;
+use crate::models::Bet;
 use diesel::{prelude::*, sql_query};
 
-pub fn get_balances(
+pub fn get_bets(
     conn: &mut SqliteConnection,
     filters: Vec<DynamicFilter>,
     limit: i64,
@@ -10,24 +11,24 @@ pub fn get_balances(
     filterop: FilterOp,
     order: Order,
     order_by: String,
-) -> Result<Vec<Balance>, DbError> {
-    let columns = get_all_columns("balances");
+) -> Result<Vec<Bet>, DbError> {
+    let columns = get_all_columns("bets");
     let query_string = generate_sql_query(
-        filters, limit, offset, filterop, order, order_by, &columns, "balances",
+        filters, limit, offset, filterop, order, order_by, &columns, "bets",
     );
+    println!("Query string: {:?}", query_string);
     if query_string.is_none() {
         return Err(Box::new(std::io::Error::new(
             std::io::ErrorKind::Other,
             "Unable to generate SQL query.",
         )));
     }
-    println!("Query string: {:?}", query_string);
-    let result = sql_query(&query_string.unwrap()).load::<Balance>(conn);
+    let result = sql_query(&query_string.unwrap()).load::<Bet>(conn);
     match result {
         Ok(r) => Ok(r),
-        Err(e) => Err(Box::new(std::io::Error::new(
+        Err(_e) => Err(Box::new(std::io::Error::new(
             std::io::ErrorKind::Other,
-            format!("Unable to execute SQL query: {:?}", e),
+            "Unable to generate SQL query.",
         ))),
     }
 }

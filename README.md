@@ -17,18 +17,30 @@ This API enables dynamic querying of database tables, allowing clients to specif
 
 ## Query Functions
 
-- [x] balances
+- [x] Balances
 - [x] Dispensers
 - [x] Burns
 - [x] Issuances
 - [x] Blocks
 - [x] Debits
+- [ ] Credits
+- [ ] Cancels
 - [x] Messages
 - [x] Sends
 - [x] Dispenses
-- [ ] Bets
+- [x] Bets
 - [ ] Dividends
 - [ ] Rps
+- [ ] Broadcasts
+- [ ] Bet Expirations
+- [ ] Order Expirations
+- [ ] Bet Match expirations
+- [ ] Order Match Expirations
+- [ ] Bet Match Resolutions
+- [ ] Mempool
+- [ ] Orders
+- [ ] Btcpays
+
 
 ## Example Usage
 
