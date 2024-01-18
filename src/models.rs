@@ -2,7 +2,15 @@ use crate::schema::*;
 use diesel::prelude::*;
 use diesel::QueryableByName;
 use serde::{Deserialize, Serialize};
-/// User details.
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
+#[diesel(table_name = addresses)]
+pub struct Address {
+    pub address: String,
+    pub options: Option<i32>,
+    pub block_index: Option<i32>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
 #[diesel(table_name = assets)]
 pub struct Asset {
@@ -22,7 +30,7 @@ pub struct Balance {
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
 #[diesel(table_name = blocks)]
 pub struct Block {
-    pub block_index: i64,
+    pub block_index: i32,
     pub block_hash: Option<String>,
     pub block_time: Option<i32>,
     pub previous_block_hash: Option<String>,
@@ -165,7 +173,16 @@ pub struct BetMatchResolution {
     pub escrow_less_fee: i32,
     pub fee: i64,
 }
-
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
+#[diesel(table_name = credits)]
+pub struct Credit {
+    pub block_index: i32,
+    pub address: String,
+    pub asset: Option<String>,
+    pub quantity: Option<i32>,
+    pub calling_function: Option<String>,
+    pub event: Option<String>,
+}
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, QueryableByName)]
 #[diesel(table_name = bet_match_expirations)]
 pub struct BetMatchExpiration {
@@ -272,8 +289,17 @@ pub fn get_all_tables() -> Vec<String> {
 
 pub fn get_all_columns(table: &str) -> Vec<&str> {
     let columns = match table {
+        "addresses" => vec!["address", "options", "block_index"],
         "balances" => vec!["address", "asset", "quantity"],
         "assets" => vec!["asset_id", "asset_name", "block_index", "asset_longname"],
+        "credits" => vec![
+            "block_index",
+            "address",
+            "asset",
+            "quantity",
+            "calling_function",
+            "event",
+        ],
         "blocks" => vec![
             "block_index",
             "block_hash",

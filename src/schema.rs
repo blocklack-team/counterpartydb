@@ -19,7 +19,7 @@ table! {
 
 table! {
     blocks (block_index) {
-        block_index -> BigInt,
+        block_index -> Integer,
         block_hash -> Nullable<Text>,
         block_time -> Nullable<Integer>,
         previous_block_hash -> Nullable<Text>,
@@ -241,5 +241,24 @@ table! {
         status -> Nullable<Text>,
         msg_index -> Nullable<Integer>,
         memo -> Nullable<Binary>,
+    }
+}
+
+table! {
+    addresses (address) {
+        address -> Text,
+        options -> Nullable<Integer>,
+        block_index -> Nullable<Integer>,
+    }
+}
+
+table! {
+    credits (address) {
+        block_index -> Integer,
+        address -> Text,
+        asset -> Nullable<Text>,
+        quantity -> Nullable<Integer>,
+        calling_function -> Nullable<Text>,
+        event -> Nullable<Text>,
     }
 }
