@@ -1,7 +1,9 @@
+pub mod addresses;
 pub mod balances;
 pub mod bets;
 pub mod blocks;
 pub mod burns;
+pub mod credits;
 pub mod db;
 pub mod debits;
 pub mod dispensers;

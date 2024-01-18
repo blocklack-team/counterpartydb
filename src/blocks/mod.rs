@@ -16,6 +16,7 @@ pub fn get_blocks(
     let query_string = generate_sql_query(
         filters, limit, offset, filterop, order, order_by, &columns, "blocks",
     );
+    println!("Query string: {:?}", query_string);
     if query_string.is_none() {
         return Err(Box::new(std::io::Error::new(
             std::io::ErrorKind::Other,

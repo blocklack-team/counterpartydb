@@ -164,7 +164,7 @@ pub fn generate_sql_query(
             return None;
         }
     } else {
-        order_by_default = "quantity".to_string();
+        order_by_default = columns[0].to_string();
     }
     let order_clause = match order {
         Order::ASC => format!("ORDER BY {} ASC", order_by_default),

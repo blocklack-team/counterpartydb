@@ -1,8 +1,10 @@
 use actix_web::{error, web, HttpResponse, Responder};
+use counterpartydb::addresses::*;
 use counterpartydb::balances::*;
 use counterpartydb::bets::*;
 use counterpartydb::blocks::*;
 use counterpartydb::burns::*;
+use counterpartydb::credits::*;
 use counterpartydb::db::*;
 use counterpartydb::debits::*;
 use counterpartydb::dispensers::*;
@@ -15,6 +17,7 @@ use diesel::prelude::*;
 use serde::Deserialize;
 #[derive(Deserialize)]
 enum QueryResult {
+    Addresses(Vec<Address>),
     Balances(Vec<Balance>),
     Blocks(Vec<Block>),
     Dispensers(Vec<Dispenser>),
@@ -25,6 +28,7 @@ enum QueryResult {
     Messages(Vec<Message>),
     Sends(Vec<Send>),
     Bets(Vec<Bet>),
+    Credits(Vec<Credit>),
 }
 
 fn _query_data(
@@ -157,6 +161,30 @@ fn _query_data(
             )?;
             return Ok(Some(QueryResult::Bets(bets)));
         }
+        "get_addresses" => {
+            let addresses = get_addresses(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
+            return Ok(Some(QueryResult::Addresses(addresses)));
+        }
+        "get_credits" => {
+            let credits = get_credits(
+                conn,
+                filters,
+                query_data.limit,
+                query_data.offset,
+                filterop,
+                order,
+                order_by,
+            )?;
+            return Ok(Some(QueryResult::Credits(credits)));
+        }
         _ => {}
     }
     Ok(None)
@@ -188,6 +216,8 @@ pub async fn query_data(
         Some(QueryResult::Messages(messages)) => Ok(HttpResponse::Ok().json(messages)),
         Some(QueryResult::Sends(sends)) => Ok(HttpResponse::Ok().json(sends)),
         Some(QueryResult::Bets(bets)) => Ok(HttpResponse::Ok().json(bets)),
+        Some(QueryResult::Addresses(addresses)) => Ok(HttpResponse::Ok().json(addresses)),
+        Some(QueryResult::Credits(credits)) => Ok(HttpResponse::Ok().json(credits)),
         //TODO: ADD more results
         _ => Ok(HttpResponse::NotFound().finish()),
     }
