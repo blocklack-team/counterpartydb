@@ -23,13 +23,20 @@ pub struct EnchanceSend {
     memo: String,
     source: String,
 }
-
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Sweep {
+    destination: String,
+    source: String,
+    flag: u8,
+    memo: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CounterPartyTransaction {
     pub transaction: InputOutput,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
 pub enum CounterPartyMessage {
+    Sweep(Sweep),
     EnchanceSend(EnchanceSend),
 }
 
@@ -193,6 +200,21 @@ impl CounterPartyTransaction {
         })
     }
 
+    fn decdode_sweep(&self, hex_data: &[u8]) -> Option<Sweep> {
+        let recipient_hex = hex_data.get(1..22).unwrap();
+        let flag_hex = hex_data.get(22..23).unwrap();
+        let memo_hex = hex_data.get(24..).unwrap();
+        let recipient = self.hex_to_address(recipient_hex);
+        let flag = u8::from_str_radix(flag_hex.as_hex().to_string().as_str(), 16);
+        let memo = self.hex2aq(memo_hex.as_hex().to_string().as_str());
+        Some(Sweep {
+            destination: recipient.unwrap_or("".to_string()),
+            source: self.get_source().unwrap(),
+            flag: flag.unwrap(),
+            memo: memo.unwrap_or("".to_string()),
+        })
+    }
+
     fn decode_classic_send(&self, hex_data: &[u8]) -> Option<EnchanceSend> {
         let mut enchance_send = self.decode_enchanced_send(&hex_data[3..]);
         match &mut enchance_send {
@@ -222,7 +244,6 @@ impl CounterPartyTransaction {
                 let cp_msg = dat_hex.get(8..).unwrap();
                 //get the first byte of the data, this is the type of the message (enhanced send, issuance, etc)
                 let hex_id = cp_msg.get(0..1).unwrap();
-                //printtln!("hex_id: {:?}", hex_id);
                 if hex_id == ENCHANCED_SEND_ID {
                     //decode the enhanced send
                     let enchance_send = self.decode_enchanced_send(cp_msg);
@@ -234,12 +255,20 @@ impl CounterPartyTransaction {
                     }
                 }
                 if hex_id == CLASSIC_SEND_ID {
+                    //decode the classic send is the same as the enhanced send but the recipient is the first output of the tx
                     let enchance_send = self.decode_classic_send(cp_msg);
                     match enchance_send {
                         None => return None,
                         Some(enchance_send) => {
                             return Some(CounterPartyMessage::EnchanceSend(enchance_send))
                         }
+                    }
+                }
+                if hex_id == SWEEP {
+                    let sweep = self.decdode_sweep(cp_msg);
+                    match sweep {
+                        None => return None,
+                        Some(sweep) => return Some(CounterPartyMessage::Sweep(sweep)),
                     }
                 } else {
                     return None;
