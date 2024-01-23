@@ -2,7 +2,7 @@ use crate::db::*;
 use crate::models::get_all_columns;
 use crate::models::Send;
 use diesel::{prelude::*, sql_query};
-pub mod sends;
+
 pub fn get_sends(
     conn: &mut SqliteConnection,
     filters: Vec<DynamicFilter>,
