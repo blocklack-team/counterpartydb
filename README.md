@@ -45,6 +45,8 @@ This API enables dynamic querying of database tables, allowing clients to specif
 ## decode functions
 - [x] Classic send
 - [x] Enchance Send
+- [x] Btc Pay
+- [x] Dex Order
 
 ## Address support
 - [x] p2pkh

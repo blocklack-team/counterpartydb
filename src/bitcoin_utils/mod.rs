@@ -210,16 +210,18 @@ fn script_pubkey_type(script: &ScriptBuf, witness: Option<&Witness>) -> String {
     if !witness_arr.is_empty() && script_bytes.len() >= 22 {
         return "p2sh-p2wpkh".to_string();
     }
-    //DER signature start with 0x30
-    if script_bytes.get(1) == Some(&0x30) {
-        return "p2pkh".to_string();
-    }
     if script.is_op_return() {
         return "op_return".to_string();
     }
     if script.is_witness_program() {
         return "witness_program".to_string();
     }
+
+    //DER signature start with 0x30 opreturn can have 0x30
+    if script_bytes.get(1) == Some(&0x30) {
+        return "p2pkh".to_string();
+    }
+
     "unknown".to_string()
 }
 

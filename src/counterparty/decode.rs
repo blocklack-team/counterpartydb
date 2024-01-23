@@ -2,7 +2,7 @@ use crate::bitcoin_utils::{deserialize_rawtx, request_tx};
 use crate::counterparty::CounterPartyTransaction;
 use actix_web::{
     web::{self},
-    HttpRequest, Responder,
+    HttpRequest, HttpResponse, Responder,
 };
 use serde::*;
 
@@ -29,8 +29,13 @@ pub async fn get_info_rawtx(req: web::Json<Rawtx>) -> actix_web::Result<impl Res
             match enchance {
                 Some(e) => match e {
                     CounterPartyMessage::EnchanceSend(enchance_send) => {
-                        Ok(web::Json(enchance_send))
+                        Ok(HttpResponse::Ok().json(enchance_send))
                     }
+                    CounterPartyMessage::Sweep(sweep) => Ok(HttpResponse::Ok().json(sweep)),
+                    CounterPartyMessage::DexOrder(dex_order) => {
+                        Ok(HttpResponse::Ok().json(dex_order))
+                    }
+                    CounterPartyMessage::BtcPay(btc_pay) => Ok(HttpResponse::Ok().json(btc_pay)),
                 },
                 None => Err(actix_web::error::ErrorBadRequest(
                     "Invalid counterparty tx data",
