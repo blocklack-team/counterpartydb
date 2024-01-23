@@ -1,3 +1,6 @@
+/* strictly based on https://github.com/Jpja/Electrum-Counterparty/blob/master/js/xcp/assets.js#L8
+thanks to juan and JPJA for the help */
+
 extern crate bs58;
 
 use crate::bitcoin_utils::InputOutput;
