@@ -1,3 +1,4 @@
+# This is an untested development version, please do not use it in production.
 # counterpartydb
 A Counterparty db wrapper
 
