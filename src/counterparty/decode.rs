@@ -32,6 +32,10 @@ pub async fn get_info_rawtx(req: web::Json<Rawtx>) -> actix_web::Result<impl Res
                         Ok(HttpResponse::Ok().json(enchance_send))
                     }
                     CounterPartyMessage::Sweep(sweep) => Ok(HttpResponse::Ok().json(sweep)),
+                    CounterPartyMessage::DexOrder(dex_order) => {
+                        Ok(HttpResponse::Ok().json(dex_order))
+                    }
+                    CounterPartyMessage::BtcPay(btc_pay) => Ok(HttpResponse::Ok().json(btc_pay)),
                 },
                 None => Err(actix_web::error::ErrorBadRequest(
                     "Invalid counterparty tx data",

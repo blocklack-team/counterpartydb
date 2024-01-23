@@ -7,6 +7,7 @@ use crate::bitcoin_utils::InputOutput;
 
 use crate::constants::*;
 use bech32::{self, u5, ToBase32, Variant};
+use bitcoin::amount;
 use bitcoin::hashes::{sha256d, Hash};
 use bitcoin::hex::{DisplayHex, FromHex};
 use rc4::{consts::*, KeyInit, StreamCipher};
@@ -30,6 +31,24 @@ pub struct Sweep {
     flag: u8,
     memo: String,
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DexOrder {
+    source: String,
+    get_asset: String,
+    get_quantity: i64,
+    give_asset: String,
+    give_quantity: i64,
+    expiration: i32,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BtcPay {
+    order_0: String,
+    order_1: String,
+    amount: i64,
+    recipient: String,
+    source: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CounterPartyTransaction {
     pub transaction: InputOutput,
@@ -38,6 +57,8 @@ pub struct CounterPartyTransaction {
 pub enum CounterPartyMessage {
     Sweep(Sweep),
     EnchanceSend(EnchanceSend),
+    DexOrder(DexOrder),
+    BtcPay(BtcPay),
 }
 
 impl CounterPartyTransaction {
@@ -215,6 +236,56 @@ impl CounterPartyTransaction {
         })
     }
 
+    fn decode_dex_order(&self, hex_data: &[u8]) -> Option<DexOrder> {
+        //from the 1st to the 8th byte is the asset
+        let give_asset_bytes = hex_data.get(1..9).unwrap();
+        //from the 9th to the 16th byte is the quantity
+        let give_quantity_bytes = hex_data.get(9..17).unwrap();
+        //from the 17th to the 24th byte is the get asset
+        let get_asset_bytes = hex_data.get(17..25).unwrap();
+        //from the 24th byte to the 32th byte is the get quantity
+        let get_quantity_bytes = hex_data.get(25..33).unwrap();
+        //from the 32th byte to the 36th byte is the expiration
+        let expiration_bytes = hex_data.get(33..37).unwrap();
+
+        let give_asset = self.get_asset_name(
+            u64::from_str_radix(give_asset_bytes.as_hex().to_string().as_str(), 16).unwrap(),
+        );
+        let give_quantity =
+            i64::from_str_radix(give_quantity_bytes.as_hex().to_string().as_str(), 16);
+        let get_asset = self.get_asset_name(
+            u64::from_str_radix(get_asset_bytes.as_hex().to_string().as_str(), 16).unwrap(),
+        );
+        let get_quantity =
+            i64::from_str_radix(get_quantity_bytes.as_hex().to_string().as_str(), 16);
+        let expiration = i32::from_str_radix(expiration_bytes.as_hex().to_string().as_str(), 16);
+        Some(DexOrder {
+            source: self.get_source().unwrap(),
+            give_asset: give_asset,
+            give_quantity: give_quantity.unwrap(),
+            get_asset: get_asset,
+            get_quantity: get_quantity.unwrap(),
+            expiration: expiration.unwrap(),
+        })
+    }
+
+    fn decode_btc_pay(&self, hex_data: &[u8]) -> Option<BtcPay> {
+        let order_0 = hex_data.get(1..33).unwrap();
+        let order_1 = hex_data.get(33..65).unwrap();
+        let amount = self.transaction.vout[0].value as i64;
+        let recipient = self.transaction.vout[0]
+            .scriptpubkey_address
+            .as_ref()
+            .unwrap();
+        Some(BtcPay {
+            order_0: order_0.as_hex().to_string(),
+            order_1: order_1.as_hex().to_string(),
+            amount: amount,
+            recipient: recipient.to_string(),
+            source: self.get_source().unwrap(),
+        })
+    }
+
     fn decode_classic_send(&self, hex_data: &[u8]) -> Option<EnchanceSend> {
         let mut enchance_send = self.decode_enchanced_send(&hex_data[3..]);
         match &mut enchance_send {
@@ -244,6 +315,7 @@ impl CounterPartyTransaction {
                 let cp_msg = dat_hex.get(8..).unwrap();
                 //get the first byte of the data, this is the type of the message (enhanced send, issuance, etc)
                 let hex_id = cp_msg.get(0..1).unwrap();
+                println!("hex_id: {:?}", hex_id);
                 if hex_id == ENCHANCED_SEND_ID {
                     //decode the enhanced send
                     let enchance_send = self.decode_enchanced_send(cp_msg);
@@ -269,6 +341,20 @@ impl CounterPartyTransaction {
                     match sweep {
                         None => return None,
                         Some(sweep) => return Some(CounterPartyMessage::Sweep(sweep)),
+                    }
+                }
+                if hex_id == DEX_ORDER {
+                    let dex_order = self.decode_dex_order(cp_msg);
+                    match dex_order {
+                        None => return None,
+                        Some(dex_order) => return Some(CounterPartyMessage::DexOrder(dex_order)),
+                    }
+                }
+                if hex_id == BTC_PAY {
+                    let btc_pay = self.decode_btc_pay(cp_msg);
+                    match btc_pay {
+                        None => return None,
+                        Some(btc_pay) => return Some(CounterPartyMessage::BtcPay(btc_pay)),
                     }
                 } else {
                     return None;
