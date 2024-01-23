@@ -5,6 +5,7 @@ use std::env;
 use std::io;
 mod query;
 use actix_web::middleware::Logger;
+use counterpartydb::counterparty::decode::{get_info_rawtx, get_info_tx};
 use env_logger::Env;
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -25,10 +26,13 @@ async fn main() -> io::Result<()> {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .route("/api", web::post().to(query::query_data))
+            .route("/tx_info/{tx_hash}", web::get().to(get_info_tx))
+            .route("/get_info_rawtx", web::post().to(get_info_rawtx))
             .wrap(Logger::default())
             .wrap(Logger::new("%a %{User-Agent}i"))
     })
     .bind(("127.0.0.1", port))?
+    .workers(2)
     .run()
     .await
 }
