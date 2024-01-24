@@ -7,6 +7,7 @@ use crate::bitcoin_utils::InputOutput;
 
 use crate::constants::*;
 use bech32::{self, u5, ToBase32, Variant};
+
 use bitcoin::hashes::{sha256d, Hash};
 use bitcoin::hex::{DisplayHex, FromHex};
 use rc4::{consts::*, KeyInit, StreamCipher};
@@ -101,6 +102,31 @@ impl CounterPartyTransaction {
             if vout.scriptpubkey_type == "multisig" {
                 //get the data from the scriptpubkey asm, because is a old counterparty message
                 let mut scrip_bytes = Vec::from_hex(vout.scriptpubkey.as_str()).unwrap();
+                if scrip_bytes.len() == 105 {
+                    let first_input = &self.transaction.vin[0];
+                    //get the key for decode the data if it is an enhanced send, the key is the txid of the first input
+                    let prev_hash = match Vec::from_hex(&first_input.txid) {
+                        Ok(d) => d,
+                        Err(_e) => return None,
+                    };
+                    //init the rc4 key
+                    let rc4 = RC4Key::<U32>::from_slice(&prev_hash);
+                    //init the rc4 cipher with the key
+                    let mut cipher = Rc4::new(rc4);
+
+                    let mut raw1 = scrip_bytes.get(3..34).unwrap().to_vec();
+                    let raw2 = scrip_bytes.get(37..68).unwrap().to_vec();
+                    raw1.extend(raw2);
+                    let data = raw1.as_mut_slice();
+                    cipher.apply_keystream(data);
+                    match self.is_counterparty(data) {
+                        false => {
+                            println!("Not a counterparty message");
+                            return None;
+                        }
+                        true => return Some(data.to_vec()),
+                    }
+                }
                 let length = scrip_bytes[1];
                 scrip_bytes.drain(0..length as usize + 4);
                 scrip_bytes.drain(scrip_bytes.len() - 2..scrip_bytes.len());
