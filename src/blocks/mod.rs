@@ -3,15 +3,8 @@ use crate::models::get_all_columns;
 use crate::models::Block;
 use diesel::{prelude::*, sql_query};
 
-pub fn get_blocks(
-    conn: &mut SqliteConnection,
-    filters: Vec<DynamicFilter>,
-    limit: i64,
-    offset: i64,
-    filterop: FilterOp,
-    order: Order,
-    order_by: String,
-) -> Result<Vec<Block>, DbError> {
+pub fn get_blocks(conn: &mut SqliteConnection, query: QueryData) -> Result<Vec<Block>, DbError> {
+    let (filters, limit, offset, filterop, order, order_by) = query.tuple();
     let columns = get_all_columns("blocks");
     let query_string = generate_sql_query(
         filters, limit, offset, filterop, order, order_by, &columns, "blocks",

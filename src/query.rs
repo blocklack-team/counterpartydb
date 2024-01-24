@@ -35,154 +35,55 @@ fn _query_data(
     conn: &mut SqliteConnection,
     query_data: QueryData,
 ) -> Result<Option<QueryResult>, DbError> {
+    let q = query_data.clone();
     let method = query_data.method;
-    let filterop = query_data.filter_op;
-    let filters = query_data.filters;
-    let order = query_data.order;
-    let order_by = query_data.order_by;
     match method.as_str() {
         "get_balances" => {
-            let balances = get_balances(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let balances = get_balances(conn, q)?;
             return Ok(Some(QueryResult::Balances(balances)));
         }
         "get_blocks" => {
-            let blocks = get_blocks(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let blocks = get_blocks(conn, q)?;
             return Ok(Some(QueryResult::Blocks(blocks)));
         }
         "get_dispensers" => {
-            let dispensers = get_dispensers(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let dispensers = get_dispensers(conn, q)?;
             return Ok(Some(QueryResult::Dispensers(dispensers)));
         }
         "get_debits" => {
-            let debits = get_debits(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let debits = get_debits(conn, q)?;
             return Ok(Some(QueryResult::Debits(debits)));
         }
         "get_burns" => {
-            let burns = get_burns(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let burns = get_burns(conn, q)?;
             return Ok(Some(QueryResult::Burn(burns)));
         }
         "get_issuances" => {
-            let issuances = get_issuances(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let issuances = get_issuances(conn, q)?;
             return Ok(Some(QueryResult::Issuances(issuances)));
         }
         "get_dispenses" => {
-            let dispenses = get_dispenses(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let dispenses = get_dispenses(conn, q)?;
             return Ok(Some(QueryResult::Dispenses(dispenses)));
         }
         "get_messages" => {
-            let messages = get_messages(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let messages = get_messages(conn, q)?;
             return Ok(Some(QueryResult::Messages(messages)));
         }
         "get_sends" => {
-            let sends = get_sends(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let sends = get_sends(conn, q)?;
             return Ok(Some(QueryResult::Sends(sends)));
         }
         "get_bets" => {
-            let bets = get_bets(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let bets = get_bets(conn, q)?;
             return Ok(Some(QueryResult::Bets(bets)));
         }
         "get_addresses" => {
-            let addresses = get_addresses(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let addresses = get_addresses(conn, q)?;
             return Ok(Some(QueryResult::Addresses(addresses)));
         }
         "get_credits" => {
-            let credits = get_credits(
-                conn,
-                filters,
-                query_data.limit,
-                query_data.offset,
-                filterop,
-                order,
-                order_by,
-            )?;
+            let credits = get_credits(conn, q)?;
             return Ok(Some(QueryResult::Credits(credits)));
         }
         _ => {}
@@ -220,5 +121,57 @@ pub async fn query_data(
         Some(QueryResult::Credits(credits)) => Ok(HttpResponse::Ok().json(credits)),
         //TODO: ADD more results
         _ => Ok(HttpResponse::NotFound().finish()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use actix_web::{test, web, App};
+
+    use super::*;
+    use diesel::r2d2;
+    use dotenvy::dotenv;
+    use env_logger::Env;
+    use std::env;
+    #[actix_web::test]
+    async fn test_query_data() {
+        dotenv().ok();
+        // connect to SQLite DB
+
+        env_logger::init_from_env(Env::default().default_filter_or("info"));
+        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+        let manager = r2d2::ConnectionManager::<SqliteConnection>::new(database_url);
+        let pool = r2d2::Pool::builder()
+            .build(manager)
+            .expect("database URL should be valid path to SQLite DB file");
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(pool.clone()))
+                .route("/api", web::post().to(query_data)),
+        )
+        .await;
+        let requests = r#"
+        {
+            "method": "get_balances",
+            "filters": [
+                {
+                    "field": "address",
+                    "op": "=",
+                    "value": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+                }
+            ],
+            "limit": 10,
+            "offset": 0
+        }"#;
+        let requests: QueryData = serde_json::from_str(requests).unwrap();
+        println!("requests: {:?}", requests);
+        let req = test::TestRequest::post()
+            .uri("/api")
+            .set_json(&requests)
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
     }
 }

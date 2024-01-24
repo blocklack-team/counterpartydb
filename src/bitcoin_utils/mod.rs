@@ -1,7 +1,5 @@
-use bech32::{self, u5, ToBase32, Variant};
 use bitcoin::consensus::encode::deserialize;
 use bitcoin::hex::{DisplayHex, FromHex};
-use bitcoin::script;
 use bitcoin::{
     hashes::{ripemd160, sha256, sha256d, Hash},
     Address, PublicKey, ScriptBuf, Transaction, Witness,

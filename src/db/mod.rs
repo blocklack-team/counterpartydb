@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum Operator {
     #[serde(rename = "=")]
     Equal,
@@ -30,7 +30,7 @@ impl Operator {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum Order {
     #[serde(rename = "ASC")]
     ASC,
@@ -38,7 +38,7 @@ pub enum Order {
     DESC,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum FilterOp {
     #[serde(rename = "AND")]
     And,
@@ -46,7 +46,7 @@ pub enum FilterOp {
     Or,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(untagged)]
 pub enum FilterValue {
     String(String),
@@ -55,7 +55,7 @@ pub enum FilterValue {
     Float64(f64),
     Float32(f32),
 }
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DynamicFilter {
     pub field: String,
     pub value: FilterValue,
@@ -63,7 +63,7 @@ pub struct DynamicFilter {
     pub op: Operator,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct QueryData {
     pub method: String,
     pub filters: Vec<DynamicFilter>,
@@ -77,6 +77,19 @@ pub struct QueryData {
     pub order: Order,
     #[serde(default = "default_order_by")]
     pub order_by: String,
+}
+
+impl QueryData {
+    pub fn tuple(&self) -> (Vec<DynamicFilter>, i64, i64, FilterOp, Order, String) {
+        (
+            self.filters.clone(),
+            self.limit,
+            self.offset,
+            self.filter_op.clone(),
+            self.order.clone(),
+            self.order_by.clone(),
+        )
+    }
 }
 
 fn default_limit() -> i64 {
@@ -97,7 +110,7 @@ fn default_order() -> Order {
 }
 
 fn default_order_by() -> String {
-    String::new()
+    "".to_string()
 }
 
 fn generate_filter_clause(
@@ -170,7 +183,6 @@ pub fn generate_sql_query(
         Order::ASC => format!("ORDER BY {} ASC", order_by_default),
         Order::DESC => format!("ORDER BY {} DESC", order_by_default),
     };
-    println!("order_clause: {}", order_clause);
     let limit_offset = format!("LIMIT {} OFFSET {}", limit, offset);
 
     Some(format!(

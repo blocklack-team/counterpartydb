@@ -7,7 +7,6 @@ use crate::bitcoin_utils::InputOutput;
 
 use crate::constants::*;
 use bech32::{self, u5, ToBase32, Variant};
-use bitcoin::amount;
 use bitcoin::hashes::{sha256d, Hash};
 use bitcoin::hex::{DisplayHex, FromHex};
 use rc4::{consts::*, KeyInit, StreamCipher};

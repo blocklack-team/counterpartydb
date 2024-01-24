@@ -3,15 +3,8 @@ use crate::models::get_all_columns;
 use crate::models::Credit;
 use diesel::{prelude::*, sql_query};
 
-pub fn get_credits(
-    conn: &mut SqliteConnection,
-    filters: Vec<DynamicFilter>,
-    limit: i64,
-    offset: i64,
-    filterop: FilterOp,
-    order: Order,
-    order_by: String,
-) -> Result<Vec<Credit>, DbError> {
+pub fn get_credits(conn: &mut SqliteConnection, query: QueryData) -> Result<Vec<Credit>, DbError> {
+    let (filters, limit, offset, filterop, order, order_by) = query.tuple();
     let columns = get_all_columns("credits");
     let query_string = generate_sql_query(
         filters, limit, offset, filterop, order, order_by, &columns, "credits",
