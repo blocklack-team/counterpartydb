@@ -47,12 +47,14 @@ This API enables dynamic querying of database tables, allowing clients to specif
 - [x] Enchance Send
 - [x] Btc Pay
 - [x] Dex Order
+- [x] Issuances pre2022
 
 ## Address support
 - [x] p2pkh
 - [x] p2sh
 - [x] p2sh-p2wpkh
 - [x] p2wsh
+- [x] p2wpkh 
 
 ## Example Usage
 

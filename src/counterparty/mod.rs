@@ -64,6 +64,7 @@ pub struct Issuance {
     call_price: i64,
     len: i64,
     description: String,
+    issuer: String,
 }
 
 pub enum CounterPartyMessage {
@@ -368,6 +369,7 @@ impl CounterPartyTransaction {
         let len = i64::from_str_radix(len_hex.as_hex().to_string().as_str(), 16);
         let description = self.hex2aq(description_hex.as_hex().to_string().as_str());
         Some(Issuance {
+            issuer: self.get_source().unwrap(),
             asset: asset_name,
             quantity: quantity.unwrap(),
             divisible: divisible,
