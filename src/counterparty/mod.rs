@@ -54,11 +54,24 @@ pub struct CounterPartyTransaction {
     pub transaction: InputOutput,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Issuance {
+    asset: String,
+    quantity: i64,
+    divisible: bool,
+    call: i64,
+    call_date: i64,
+    call_price: i64,
+    len: i64,
+    description: String,
+}
+
 pub enum CounterPartyMessage {
     Sweep(Sweep),
     EnchanceSend(EnchanceSend),
     DexOrder(DexOrder),
     BtcPay(BtcPay),
+    Issuance(Issuance),
 }
 
 impl CounterPartyTransaction {
@@ -73,13 +86,14 @@ impl CounterPartyTransaction {
     }
 
     pub fn decode_op_return(&self) -> Option<Vec<u8>> {
+        let mut result = Vec::new();
         for vout in &self.transaction.vout {
             if vout.scriptpubkey_type == "op_return" {
                 let first_input = &self.transaction.vin[0];
                 //get the key for decode the data if it is an enhanced send, the key is the txid of the first input
                 let prev_hash = match Vec::from_hex(&first_input.txid) {
                     Ok(d) => d,
-                    Err(_e) => return None,
+                    Err(_e) => continue,
                 };
                 //init the rc4 key
                 let rc4 = RC4Key::<U32>::from_slice(&prev_hash);
@@ -91,12 +105,13 @@ impl CounterPartyTransaction {
                 //printtln!("data_hex: {:?}", data_hex.as_hex().to_string());
                 let data_slice = data_hex.as_mut_slice();
                 cipher.apply_keystream(data_slice);
+                println!("data_slice: {:?}", data_slice.as_hex().to_string());
                 match self.is_counterparty(data_slice) {
                     false => {
                         println!("Not a counterparty message");
-                        return None;
+                        continue;
                     }
-                    true => return Some(data_slice.to_vec()),
+                    true => result.extend_from_slice(data_slice),
                 }
             }
             if vout.scriptpubkey_type == "multisig" {
@@ -107,7 +122,7 @@ impl CounterPartyTransaction {
                     //get the key for decode the data if it is an enhanced send, the key is the txid of the first input
                     let prev_hash = match Vec::from_hex(&first_input.txid) {
                         Ok(d) => d,
-                        Err(_e) => return None,
+                        Err(_e) => continue,
                     };
                     //init the rc4 key
                     let rc4 = RC4Key::<U32>::from_slice(&prev_hash);
@@ -119,27 +134,28 @@ impl CounterPartyTransaction {
                     raw1.extend(raw2);
                     let data = raw1.as_mut_slice();
                     cipher.apply_keystream(data);
-                    match self.is_counterparty(data) {
+                    match self.is_counterparty(data) || self.is_counterparty(&result) {
                         false => {
                             println!("Not a counterparty message");
-                            return None;
+                            continue;
                         }
-                        true => return Some(data.to_vec()),
+                        true => result.extend_from_slice(data),
                     }
+                    continue;
                 }
                 let length = scrip_bytes[1];
                 scrip_bytes.drain(0..length as usize + 4);
                 scrip_bytes.drain(scrip_bytes.len() - 2..scrip_bytes.len());
-                match self.is_counterparty(&scrip_bytes) {
+                match self.is_counterparty(&scrip_bytes) || self.is_counterparty(&result) {
                     false => {
                         println!("Not a counterparty message");
-                        return None;
+                        continue;
                     }
-                    true => return scrip_bytes.into(),
+                    true => result.extend_from_slice(&scrip_bytes),
                 }
             }
         }
-        None
+        result.into()
     }
 
     fn get_asset_name(&self, id: u64) -> String {
@@ -331,15 +347,51 @@ impl CounterPartyTransaction {
         }
     }
 
+    fn decode_issuance_pre2022(&self, hex_data: &[u8]) -> Option<Issuance> {
+        let asset_hex = hex_data.get(4..12).unwrap();
+        let quantity_hex = hex_data.get(12..20).unwrap();
+        let divisible_hex = hex_data.get(20..21).unwrap();
+        let call_hex = hex_data.get(21..22).unwrap();
+        let call_date_hex = hex_data.get(22..26).unwrap();
+        let call_price_hex = hex_data.get(26..30).unwrap();
+        let len_hex = hex_data.get(30..31).unwrap();
+        let description_hex = hex_data.get(28..).unwrap();
+        let asset_name = self.get_asset_name(
+            u64::from_str_radix(asset_hex.as_hex().to_string().as_str(), 16).unwrap(),
+        );
+        let quantity = i64::from_str_radix(quantity_hex.as_hex().to_string().as_str(), 16);
+        let divisible =
+            i64::from_str_radix(divisible_hex.as_hex().to_string().as_str(), 16).unwrap() == 1;
+        let call = i64::from_str_radix(call_hex.as_hex().to_string().as_str(), 16);
+        let call_date = i64::from_str_radix(call_date_hex.as_hex().to_string().as_str(), 16);
+        let call_price = i64::from_str_radix(call_price_hex.as_hex().to_string().as_str(), 16);
+        let len = i64::from_str_radix(len_hex.as_hex().to_string().as_str(), 16);
+        let description = self.hex2aq(description_hex.as_hex().to_string().as_str());
+        Some(Issuance {
+            asset: asset_name,
+            quantity: quantity.unwrap(),
+            divisible: divisible,
+            call: call.unwrap(),
+            call_date: call_date.unwrap(),
+            call_price: call_price.unwrap(),
+            len: len.unwrap(),
+            description: description.unwrap_or("".to_string()),
+        })
+    }
+
     pub fn get_tx_decoded(&self) -> Option<CounterPartyMessage> {
         let data = self.decode_op_return();
         match data {
             None => return None,
             Some(dat_hex) => {
+                println!("dat_hex: {:?}", dat_hex.as_hex().to_string());
                 //split the data in the first 8 bytes and the rest of the data
                 let cp_msg = dat_hex.get(8..).unwrap();
                 //get the first byte of the data, this is the type of the message (enhanced send, issuance, etc)
-                let hex_id = cp_msg.get(0..1).unwrap();
+                let mut hex_id = cp_msg.get(0..1).unwrap();
+                if hex_id == [0] {
+                    hex_id = cp_msg.get(3..4).unwrap();
+                }
                 println!("hex_id: {:?}", hex_id);
                 if hex_id == ENCHANCED_SEND_ID {
                     //decode the enhanced send
@@ -380,6 +432,13 @@ impl CounterPartyTransaction {
                     match btc_pay {
                         None => return None,
                         Some(btc_pay) => return Some(CounterPartyMessage::BtcPay(btc_pay)),
+                    }
+                }
+                if hex_id == ISSUANCE {
+                    let issuance = self.decode_issuance_pre2022(cp_msg);
+                    match issuance {
+                        None => return None,
+                        Some(issuance) => return Some(CounterPartyMessage::Issuance(issuance)),
                     }
                 } else {
                     return None;

@@ -5,6 +5,7 @@ pub const CLASSIC_SEND_ID: [u8; 1] = [0];
 pub const SWEEP: [u8; 1] = [4];
 pub const DEX_ORDER: [u8; 1] = [10];
 pub const BTC_PAY: [u8; 1] = [11];
+pub const ISSUANCE: [u8; 1] = [20];
 pub const BASE58_VERSION_BYTE: [u8; 1] = [0];
 pub const BASE58_P2SH_VERSION_BYTE: [u8; 1] = [5];
 pub const BECH_32_VERSION_BYTE: [u8; 1] = [128];

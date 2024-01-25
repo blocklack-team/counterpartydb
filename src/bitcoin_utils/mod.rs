@@ -1,16 +1,17 @@
+use crate::constants::NETWORK;
+use bech32::{self, u5, ToBase32, Variant};
 use bitcoin::consensus::encode::deserialize;
 use bitcoin::hex::{DisplayHex, FromHex};
 use bitcoin::{
     hashes::{ripemd160, sha256, sha256d, Hash},
     Address, PublicKey, ScriptBuf, Transaction, Witness,
 };
+use diesel::sql_types::ops::Add;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::*;
 use serde_json::Value;
 use std::str::FromStr;
-
-use crate::constants::NETWORK;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Vout {
@@ -182,6 +183,22 @@ pub fn get_address_from_script(scriptsig: &ScriptBuf, witness: Option<&Witness>)
         let address = get_address_from_ripedmd(&ripemd160_of_sha2.to_vec());
         return address.into();
     }
+    if script_pubk_type == "p2wpkh" && witness.is_some() {
+        let pubkey_hex = &witness.unwrap().to_vec()[1];
+        let pubk = PublicKey::from_str(&pubkey_hex.as_hex().to_string()).unwrap();
+        let address = Address::p2wpkh(&pubk, NETWORK).unwrap();
+        return address.to_string().into();
+    } else if script_pubk_type == "p2wpkh" && witness.is_none() {
+        let ripemd160_of_sha2_pub = scriptsig.as_bytes().get(2..).unwrap();
+        let hrp = "bc";
+        //remove the first byte of the data, this is the version byte
+        //convert the data to base32
+        let mut data_base = ripemd160_of_sha2_pub.to_base32();
+        //add the witness version byte to the data
+        data_base.insert(0, u5::try_from_u8(0).unwrap());
+        let address = bech32::encode(hrp, &data_base, Variant::Bech32).unwrap();
+        return address.into();
+    }
     None
 }
 
@@ -205,8 +222,11 @@ fn script_pubkey_type(script: &ScriptBuf, witness: Option<&Witness>) -> String {
         return "multisig".to_string();
     }
     //if witness is not empty and script is > 22 bytes is a p2sh-p2wpkh
-    if !witness_arr.is_empty() && script_bytes.len() >= 22 {
+    if !witness_arr.is_empty() && script_bytes.len() >= 20 {
         return "p2sh-p2wpkh".to_string();
+    }
+    if !witness_arr.is_empty() && script_bytes.len() == 0 {
+        return "p2wpkh".to_string();
     }
     if script.is_op_return() {
         return "op_return".to_string();
@@ -247,7 +267,13 @@ pub async fn deserialize_rawtx(rawtx: &String) -> Option<InputOutput> {
                     scriptsig_asm: i.script_sig.to_string(),
                     is_coinbase: d.is_coinbase(),
                     sequence: i.sequence.to_consensus_u32() as u64,
-                    witness: None,
+                    witness: Some(
+                        i.witness
+                            .to_vec()
+                            .into_iter()
+                            .map(|w| w.as_hex().to_string())
+                            .collect(),
+                    ),
                 };
                 inputs.push(inputxcp);
             });
