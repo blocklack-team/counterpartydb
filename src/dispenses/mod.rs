@@ -5,13 +5,9 @@ use diesel::{prelude::*, sql_query};
 
 pub fn get_dispenses(
     conn: &mut SqliteConnection,
-    filters: Vec<DynamicFilter>,
-    limit: i64,
-    offset: i64,
-    filterop: FilterOp,
-    order: Order,
-    order_by: String,
+    query: QueryData,
 ) -> Result<Vec<Dispense>, DbError> {
+    let (filters, limit, offset, filterop, order, order_by) = query.tuple();
     let columns = get_all_columns("dispenses");
     let query_string = generate_sql_query(
         filters,

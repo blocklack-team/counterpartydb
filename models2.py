@@ -7,6 +7,19 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 
+""" 
+first 22 bytes 24 in hex
+434e54525052545900000014
+
+prefix 8 bytes 16 in hex
+434e545250525459
+the ms id is in 9 byte, 17-18 in hex
+00
+so if the 9 byte is 0 ('00' in hex) just move 4 bytes to the right
+14
+int(0x14, 16) = 20
+"""
+
 
 class Addresses(models.Model):
     address = models.TextField(unique=True, blank=True, null=True)
